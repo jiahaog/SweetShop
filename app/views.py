@@ -5,8 +5,8 @@ import urllib2
 import urlparse
 from helper import getFromResponseWithKey, getAddressFromResponse
 
-ROOT_URL = 'http://127.0.0.1:5000'
-# ROOT_URL = 'https://sweetshop.herokuapp.com'
+# ROOT_URL = 'http://127.0.0.1:5000'
+ROOT_URL = 'https://sweetshop.herokuapp.com'
 
 
 USER = 'jh-seller_api1.gmail.com'
