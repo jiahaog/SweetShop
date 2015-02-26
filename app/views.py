@@ -4,15 +4,8 @@ import urllib
 import urllib2
 import urlparse
 from helper import getFromResponseWithKey, getAddressFromResponse
+from config import ROOT_URL, USER, PWD, SIGNATURE, API_SERVER
 
-# ROOT_URL = 'http://127.0.0.1:5000'
-ROOT_URL = 'https://sweetshop.herokuapp.com'
-
-
-USER = 'jh-seller_api1.gmail.com'
-PWD = 'STEQUJHBE7G8YE6C'
-SIGNATURE = 'ABJn0t6lSvhISGgOOG5rpe-BZf42A8MSNs5HNoOzQQzlRWj3jk52NRvy'
-API_SERVER = 'https://api-3t.sandbox.paypal.com/nvp'
 
 @app.route('/')
 @app.route('/index')
@@ -22,8 +15,6 @@ def index():
     return render_template('index.html',
                             user=user)
 
-
-
 @app.route('/buy')
 def buy():
     print "buying"  
@@ -32,7 +23,6 @@ def buy():
     cancelUrl = ROOT_URL + '/cancel'
     
     values = {
-
         'METHOD' : 'SetExpressCheckout',
         'VERSION' : '109.0',
         
@@ -65,27 +55,19 @@ def buy():
         'ALLOWNOTE' : '1',
     }
 
-
-    #x` setExpressCheckout
-
     # sends the encoded request
     data = urllib.urlencode(values)
     req = urllib2.Request(API_SERVER, data)
     response = urllib2.urlopen(req)
-
     responseString = response.read()
+
     # parse the response
     token = getFromResponseWithKey(responseString, 'TOKEN')
     
-
-    # print 'setExpressCheckout token: ' + token
-
     # redirect the customer to paypal
-
     redirectUrl = "https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_express-checkout&token=" + token
     
     return redirect(redirectUrl)
-    # return "buying stuff"
 
 
 @app.route('/getCheckoutDetails')
@@ -118,10 +100,10 @@ def getCheckoutDetails():
     address = getAddressFromResponse(responseString)
     print address
 
+    # Passes the token and payerid to the confirm link, which will 
+    # be passed to the success() function
+
     doCheckoutParameters = '?token=' + token + '&PayerID=' + payerId
-
-
-
 
     return render_template('confirm.html', payerId=payerId, email=email, totalAmt=totalAmt, address=address, queryParameters=doCheckoutParameters)
 
@@ -165,35 +147,9 @@ def success():
 
     else:
         return redirect(url_for('cancel'))
-    # return render_template('payment_success.html', payerId=payerId)
-    
+
 
 @app.route('/cancel')
 def cancel():
 
     return render_template('failure.html')
-# helper function to get the token from the response string
-# def parseToken(inp):
-#     firstKey = ""
-
-#     equalSignOfTokenIndex = 0
-#     for i, v in enumerate(inp):
-#         firstKey+=v
-
-#         if "TOKEN=" in firstKey:
-#             equalSignOfTokenIndex = i
-#             break
-
-#     tokenString = ""
-#     for character in inp[equalSignOfTokenIndex+1:]:
-#         if character == "&":
-#             break
-
-#         tokenString += character
-
-#     return tokenString
-
-
-
-
-
