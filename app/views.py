@@ -2,9 +2,11 @@ from flask import render_template, request, redirect, url_for
 from app import app
 import urllib
 import urllib2
+import urlparse
+from helper import getFromResponseWithKey, getAddressFromResponse
 
-# ROOT_URL = 'http://127.0.0.1:5000'
-ROOT_URL = 'https://sweetshop.herokuapp.com'
+ROOT_URL = 'http://127.0.0.1:5000'
+# ROOT_URL = 'https://sweetshop.herokuapp.com'
 
 
 USER = 'jh-seller_api1.gmail.com'
@@ -73,9 +75,11 @@ def buy():
 
     responseString = response.read()
     # parse the response
-    token = parseToken(responseString)
+    token = getFromResponseWithKey(responseString, 'TOKEN')
     
-    print 'setExpressCheckout token: ' + token
+
+    # print 'setExpressCheckout token: ' + token
+
     # redirect the customer to paypal
 
     redirectUrl = "https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_express-checkout&token=" + token
@@ -87,7 +91,9 @@ def buy():
 @app.route('/getCheckoutDetails')
 def getCheckoutDetails():
     queryParameters = request.args
-    # payerId = queryParameters.get('PayerID')
+    
+    token = queryParameters.get('token')
+    
 
     values = {
 
@@ -97,7 +103,7 @@ def getCheckoutDetails():
         'USER' : USER,
         'PWD' : PWD,
         'SIGNATURE' : SIGNATURE,
-        'TOKEN' : queryParameters.get('token'),
+        'TOKEN' : token,
     }
 
     data = urllib.urlencode(values)
@@ -105,41 +111,87 @@ def getCheckoutDetails():
     response = urllib2.urlopen(req)
 
     responseString = response.read()
-    print responseString
 
-    return "gotcheckoutdetails"
+    email = getFromResponseWithKey(responseString, 'EMAIL')
+    payerId = getFromResponseWithKey(responseString, 'PAYERID')
+    totalAmt = getFromResponseWithKey(responseString, 'AMT')
+    address = getAddressFromResponse(responseString)
+    print address
+
+    doCheckoutParameters = '?token=' + token + '&PayerID=' + payerId
+
+
+
+
+    return render_template('confirm.html', payerId=payerId, email=email, totalAmt=totalAmt, address=address, queryParameters=doCheckoutParameters)
 
 
 @app.route('/success')
 def success():
     
+    queryParameters = request.args
+    token = queryParameters.get('token')
+    payerId = queryParameters.get('PayerID')
+    values = {
+
+        'METHOD' : 'DoExpressCheckoutPayment',
+        'VERSION' : '109.0',
+        
+        'USER' : USER,
+        'PWD' : PWD,
+        'SIGNATURE' : SIGNATURE,
+        'TOKEN' : token,
+
+        'PAYERID' : payerId,
+
+        'PAYMENTREQUEST_0_AMT' : '105.87',
+        'PAYMENTREQUEST_0_CURRENCYCODE' : 'USD',
+        'PAYMENTREQUEST_0_PAYMENTACTION' : 'Sale',
+    }
+
+
+    data = urllib.urlencode(values)
+    req = urllib2.Request(API_SERVER, data)
+    response = urllib2.urlopen(req)
+
+    responseString = response.read()
+    
+
+    success = getFromResponseWithKey(responseString, 'PAYMENTINFO_0_ACK')
+
+
+    if (success == 'Success'):
+        return render_template('payment_success.html')
+
+    else:
+        return redirect(url_for('cancel'))
     # return render_template('payment_success.html', payerId=payerId)
-    return render_template('payment_success.html')
+    
 
 @app.route('/cancel')
 def cancel():
 
     return render_template('failure.html')
 # helper function to get the token from the response string
-def parseToken(inp):
-    firstKey = ""
+# def parseToken(inp):
+#     firstKey = ""
 
-    equalSignOfTokenIndex = 0
-    for i, v in enumerate(inp):
-        firstKey+=v
+#     equalSignOfTokenIndex = 0
+#     for i, v in enumerate(inp):
+#         firstKey+=v
 
-        if "TOKEN=" in firstKey:
-            equalSignOfTokenIndex = i
-            break
+#         if "TOKEN=" in firstKey:
+#             equalSignOfTokenIndex = i
+#             break
 
-    tokenString = ""
-    for character in inp[equalSignOfTokenIndex+1:]:
-        if character == "&":
-            break
+#     tokenString = ""
+#     for character in inp[equalSignOfTokenIndex+1:]:
+#         if character == "&":
+#             break
 
-        tokenString += character
+#         tokenString += character
 
-    return tokenString
+#     return tokenString
 
 
 
