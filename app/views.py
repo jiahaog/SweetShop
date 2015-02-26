@@ -3,7 +3,8 @@ from app import app
 import urllib
 import urllib2
 
-ROOT_URL = 'http://127.0.0.1:5000'
+# ROOT_URL = 'http://127.0.0.1:5000'
+ROOT_URL = 'https://sweetshop.herokuapp.com'
 
 
 USER = 'jh-seller_api1.gmail.com'
